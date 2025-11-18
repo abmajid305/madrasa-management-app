@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Madrasa Management System</title>
+    <style>
+        /* ==== RESET & BASE ============================== */
+        * {margin:0;padding:0;box-sizing:border-box;}
+        body{
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+            min-height:100vh;display:flex;flex-direction:column;
+        }
+        h1{color:#2c3e50;margin-bottom:30px;font-size:28px;}
+        h2{color:#34495e;margin-bottom:20px;font-size:22px;}
+        h3{color:#2c3e50;margin-bottom:15px;font-size:18px;}
+
+        /* ==== CONTAINERS =============================== */
+        .container{width:100%;max-width:1200px;padding:20px;flex-grow:1;}
+        .header{text-align:center;color:white;margin-bottom:20px;}
+        .header h1{font-size:28px;}
+        .header p{font-size:18px;}
+        .login-container{
+            background:#fff;padding:40px;border-radius:15px;
+            box-shadow:0 20px 40px rgba(0,0,0,.1);
+            text-align:center;max-width:400px;margin:0 auto;
+        }
+        .dashboard{display:none;background:#fff;border-radius:15px;
+            box-shadow:0 20px 40px rgba(0,0,0,.1);overflow:hidden;
+        }
+        .dashboard-header{
+            background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);
+            color:#fff;padding:30px;text-align:center;position:relative;
+        }
+        .dashboard-content{padding:30px;display:flex;flex-direction:column;gap:30px;}
+        .info-section{background:#f8f9fa;padding:20px;border-radius:10px;border-left:4px solid #4facfe;}
+        .stats-section{display:flex;flex-direction:column;gap:20px;}
+        .stat-card{background:#fff;padding:20px;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,.1);text-align:center;}
+
+        /* ==== TODAY'S ATTENDANCE BOX ==================== */
+        .today-attendance-box {
+            border: 3px solid #667eea;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+            min-width: 250px;
+            margin-bottom: 20px;
+        }
+        .today-attendance-title {
+            margin: 0 0 15px 0;
+            color: #667eea;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .today-attendance-datetime {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        .today-attendance-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .today-attendance-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+        .today-attendance-status {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .status-present { color: #28a745; }
+        .status-absent { color: #dc3545; }
+        .status-not-recorded { color: #6c757d; }
+
+        /* ==== FORM =============================== */
+        .form-group{margin-bottom:20px;text-align:left;}
+        .form-group label{display:block;margin-bottom:5px;font-weight:600;color:#333;}
+        .form-group input,.form-group select{
+            width:100%;padding:12px;border:2px solid #e1e5e9;border-radius:8px;font-size:14px;transition:border-color .3s;
+        }
+        .form-group input:focus,.form-group select:focus{outline:none;border-color:#4facfe;}
+        .btn{
+            background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);
+            color:#fff;padding:12px 30px;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:600;transition:transform .2s;
+        }
+        .btn:hover{transform:translateY(-2px);}  
+        .btn-logout{background:linear-gradient(135deg,#ff6b6b 0%,#ee5a24 100%);position:absolute;right:20px;top:20px;}
+
+        /* ==== GRAPHICS =============================== */
+        .progress-circle{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 15px;font-size:18px;font-weight:bold;color:#fff;}
+        .bar-chart{display:flex;align-items:flex-end;height:200px;gap:15px;margin:20px 0;}
+        .bar{flex:1;border-radius:5px 5px 0 0;display:flex;flex-direction:column;align-items:center;position:relative;}
+        .bar-label{margin-top:10px;font-size:30px;font-weight:600;text-align:center;}
+        .bar-value{position:absolute;top:-25px;font-size:20px;font-weight:bold;color:#333;}
+        .ranking-chart{display:flex;align-items:flex-end;height:150px;gap:8px;margin:20px 0;justify-content:center;}
+        .rank-bar{border-radius:3px 3px 0 0;min-width:25px;display:flex;flex-direction:column;align-items:center;position:relative;}
+        .rank-label{margin-top:5px;font-size:10px;writing-mode:vertical-rl;text-orientation:mixed;}
+
+        /* ==== MESSAGES & LOADING =============================== */
+        .error-message{color:#e74c3c;margin-top:10px;font-size:14px;}
+        .loading{display:none;margin-top:10px;}
+        .spinner{border:3px solid #f3f3f3;border-top:3px solid #4facfe;border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite;margin:0 auto;}
+        @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+
+        /* ==== INFO GRID =============================== */
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+        .info-item{padding:10px;background:#fff;border-radius:8px;border:1px solid #e1e5e9;}
+        .info-label{font-size:12px;color:#666;margin-bottom:5px;}
+        .info-value{font-size:14px;font-weight:600;color:#333;}
+
+        /* ==== FALLING FLOWERS (🎉 BIRTHDAY) ==================== */
+        .flower{position:fixed;top:-10vh;z-index:9999;user-select:none;pointer-events:none;}
+        @keyframes fall{0%{transform:translateY(-10vh) rotate(0deg);}100%{transform:translateY(110vh) rotate(360deg);}}
+        #birthdayMessage{
+            position:fixed;top:20%;left:50%;transform:translateX(-50%);
+            background:rgba(255,255,255,.9);padding:15px 25px;border-radius:10px;
+            font-size:24px;font-weight:700;color:#d35400;z-index:10000;
+            box-shadow:0 10px 25px rgba(0,0,0,.2);
+        }
+
+        /* ==== MOBILE LAYOUT =============================== */
+        @media(max-width:768px){
+            .login-container,.dashboard{max-width:95%;padding:25px;}
+            .dashboard-content{gap:20px;}
+            .info-grid{grid-template-columns:1fr;}
+            h1{font-size:24px;}h2{font-size:20px;}h3{font-size:16px;}
+            .today-attendance-box{min-width:200px;}
+        }
+        .rank-bar:first-child {
+  position: relative;
+}
+
+.rank-bar .glow {
+  animation: glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px gold, 0 0 10px gold, 0 0 15px orange;
+  }
+  to {
+    text-shadow: 0 0 10px yellow, 0 0 20px orange, 0 0 25px gold;
+  }
+}
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) scale(1.5);
+    opacity: 0;
+  }
+}
+@media (max-width: 768px) {
+  #winnerCelebration {
+    height: 100vh; /* use viewport height for mobile */
+  }
+}
+
+
+        /* ==== FOOTER =============================== */
+        .footer {
+            text-align: center;
+            padding: 10px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <h1>تعليم الـإسلام</h1>
+            <p>PADINJAREKKARA</p>
+        </div>
+
+        <!-- ===== LOGIN ===== -->
+        <div id="loginContainer" class="login-container">
+            <h1>🕌 Madrasa Login</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="className">Class:</label>
+                    <select id="className" name="className" required>
+                        <option value="">Select Class</option>
+                        <option value="class1">Class 1</option>
+                        <option value="class2">Class 2</option>
+                        <option value="class3">Class 3</option>
+                        <option value="class4">Class 4</option>
+                        <option value="class5">Class 5</option>
+                        <option value="class6">Class 6</option>
+                        <option value="class7">Class 7</option>
+                        <option value="class8">Class 8</option>
+                        <option value="class9">Class 9</option>
+                        <option value="class10">Class 10</option>
+                        <option value="class11">Class 11</option>
+                        <option value="class12">Class 12</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <div class="loading" id="loading"><div class="spinner"></div></div>
+                <div id="errorMessage" class="error-message"></div>
+            </form>
+        </div>
+
+        <!-- ===== DASHBOARD ===== -->
+        <div id="dashboard" class="dashboard">
+            <div class="dashboard-header">
+                <button class="btn btn-logout" onclick="logout()">Logout</button>
+                <h1 id="studentName">Student Dashboard</h1>
+                <p id="studentClass"></p>
+            </div>
+            <div class="dashboard-content">
+                <!-- Personal Info -->
+                <div class="info-section">
+                    <h3>📋 Personal Information/<i>സ്വകാര്യ വിവരങ്ങൾ<i></h3>
+                    <div class="info-grid">
+                        <div class="info-item"><div class="info-label">Name</div><div class="info-value" id="infoName"></div></div>
+                        <div class="info-item"><div class="info-label">Father's Name</div><div class="info-value" id="infoFather"></div></div>
+                        <div class="info-item"><div class="info-label">Mother's Name</div><div class="info-value" id="infoMother"></div></div>
+                        <div class="info-item"><div class="info-label">Date of Birth</div><div class="info-value" id="infoDOB"></div></div>
+                    </div>
+                </div>
+
+                <!-- TODAY'S ATTENDANCE - NEW SECTION -->
+                <div class="info-section">
+                    <h3><i>📅ഇന്നത്തെ ഹാജർ<i></h3>
+                    <div style="text-align: center;">
+                        <div class="today-attendance-box">
+                            <h4 class="today-attendance-title">TODAY'S ATTENDANCE</h4>
+                            <div class="today-attendance-datetime" id="todayDateTime">Loading...</div>
+                            <div class="today-attendance-content">
+                                <div class="today-attendance-icon" id="todayAttendanceIcon">−</div>
+                                <div class="today-attendance-status" id="todayAttendanceStatus">NOT RECORDED</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance -->
+                <div class="info-section">
+                    <h3>📊<i> ആകെ ഹാജർ വിലയിരുത്തൽ<i></h3>
+                    <div id="attendanceCircle" class="progress-circle"></div>
+                    <p><strong>പ്രവർത്തി ദിവസം:</strong> <span id="totalDays"></span> ദിവസം</p>
+                    <p><strong>ഹാജർ: </strong> <span id="presentDays"></span> ദിവസം</p>
+                    <p><strong>ലീവ്: </strong> <span id="leave"></span> ദിവസം</p>
+                     <p><strong>ലീവ് തിയ്യതികൾ: </strong> <span id="leaveDate" style="color: #e74c3c; font-weight: 600;"></span></p>
+                    <p><strong>ഹാജർ സ്ഥാനം :</strong> <span id="AttendanceRank"></span> സ്ഥാനം</p>
+                </div>
+                <!-- Stats -->
+                <div class="stats-section">
+                    <div class="stat-card">
+                    <h3>📚പരീക്ഷ മാർക്കുകൾ</h3>
+
+                    <!-- Exam Type Selector -->
+                    <div id="examTypeSelector" style="text-align:center; margin-bottom:10px;"></div>
+
+                    <!-- Exam Summary Box --> 
+                    <div id="examSummary" style="background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:15px;border-left:4px solid #4facfe;">
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;">
+                            <div>
+                                <div style="font-size:12px;color:#666;margin-bottom:5px;">📊ആകെ മാർക്ക്</div>
+                                <div id="examTotalMarks" style="font-size:20px;font-weight:700;color:#2c3e50;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;color:#666;margin-bottom:5px;">🏅 ക്ലാസിലെ സ്ഥാനം</div>
+                                <div id="examClassRank" style="font-size:20px;font-weight:700;color:#2c3e50;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;color:#666;margin-bottom:5px;">📢റിസൽട്ട്</div>
+                                <div id="examStatus" style="font-size:16px;font-weight:600;color:#2c3e50;">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bar Chart -->
+                    <div class="bar-chart" id="testScoresChart"></div>
+                     
+                    </div>
+                    <div class="stat-card">
+                        <h3>🏆 ക്ലാസിലെ സ്ഥാനം (Quarterly+Half Yearly+Final)</h3>
+                        <div class="ranking-chart" id="rankingChart"></div>
+                        <p><strong>Your Position:</strong> <span id="studentPosition"></span></p>
+                    </div>
+                    <div id="winnerCelebration" style="position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999;"></div>
+
+                    <!-- Fee Calendar -->
+                    <div class="info-section">
+                        <h3>💰 Fee Calendar/പണമിടാപാടുകൾ</h3>
+                        <div id="feeStatusContainer"></div>
+                    </div>
+
+                    <!-- Parent Meeting -->
+                    <div class="info-section">
+                        <h3>👨‍👩‍👧‍👦രക്ഷകർത്ത മീറ്റ്</h3>
+
+                        <div id="parentMeetSummary" style="font-size: 1rem; margin-bottom: 10px; font-weight: 600; color: #2c3e50;"></div>
+
+                        <div id="parentMeetingIcons" style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 2rem; justify-content: center; margin-bottom: 10px;"></div>
+
+                        <div id="participantDetails" style="font-size: 0.95rem; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                            <div><strong>👤പങ്കെടുത്ത വ്യക്തി:</strong> <span id="participantName">-</span></div>
+                        </div>
+                        <div><strong>📝ഉസ്ഥാദിൻ്റെ അഭിപ്രായം	:</strong> <span id="usthadRemark">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <div class="footer">
+        <p>&copy; 2025 تعليم الـإسلام, PADINJAREKKARA. All rights reserved.</p>
+    </div>
+
+    <script>
+        /* ==================== GLOBAL STATE ==================== */
+        let currentStudent=null;let allStudents=[];
+
+        /* ==================== LOGIN ==================== */
+        document.getElementById('loginForm').addEventListener('submit',function(e){
+            e.preventDefault();
+            if(!isGoogleScriptAvailable()){showError('This page must be accessed through Google Apps Script Web App URL');return;}
+            const username=document.getElementById('username').value;
+            const password=document.getElementById('password').value;
+            const className=document.getElementById('className').value;
+            if(!username||!password||!className){showError('Please fill in all fields');return;}
+            showLoading(true);
+            google.script.run.withSuccessHandler(handleLoginSuccess).withFailureHandler(handleLoginFailure).authenticateStudent(username,password,className);
+        });
+        function handleLoginSuccess(result){showLoading(false);if(result.success){currentStudent=result.student;showDashboard();loadRankingData();}else{showError(result.message);} }
+        function handleLoginFailure(error){showLoading(false);showError('Login failed: '+error.message);}  
+
+        /* ==================== DASHBOARD RENDER ==================== */
+        function showDashboard(){
+            document.getElementById('loginContainer').style.display='none';
+            document.getElementById('dashboard').style.display='block';
+            // Header
+            document.getElementById('studentName').textContent=`Welcome, ${currentStudent.name}`;
+            document.getElementById('studentClass').textContent=`Class: ${currentStudent.className.toUpperCase()}`;
+            // Personal info
+            document.getElementById('infoName').textContent=currentStudent.name;
+            document.getElementById('infoFather').textContent=currentStudent.father;
+            document.getElementById('infoMother').textContent=currentStudent.mother;
+            document.getElementById('infoDOB').textContent=formatDate(currentStudent.dob);
+            
+            // TODAY'S ATTENDANCE
+            renderTodayAttendance();
+            
+            // Attendance
+            const attendancePercentage=Math.round((currentStudent.presentDays/currentStudent.totalWorkingDays)*100);
+            document.getElementById('totalDays').textContent=currentStudent.totalWorkingDays;
+            document.getElementById('presentDays').textContent=currentStudent.presentDays;
+            document.getElementById('leave').textContent=currentStudent.totalLeave;
+            document.getElementById('leaveDate').textContent=currentStudent.leaveDate || 'No leave taken';
+            document.getElementById('AttendanceRank').textContent=currentStudent.alloverAttendanceRank;
+            const circle=document.getElementById('attendanceCircle');
+            circle.textContent=`${attendancePercentage}%`;
+            circle.style.background=`conic-gradient(#4facfe ${attendancePercentage*3.6}deg,#e1e5e9 0deg)`;
+            // Charts
+            createTestScoresChart();
+            document.getElementById('studentPosition').textContent=`#${currentStudent.alloverGrandRank}`;
+            renderFeeCalendar(currentStudent);
+            renderParentMeeting(currentStudent);
+
+            // 🎉 Birthday celebration
+            celebrateBirthday();
+        }
+
+        /* ==================== TODAY'S ATTENDANCE ==================== */
+        function renderTodayAttendance() {
+            const icon = document.getElementById('todayAttendanceIcon');
+            const status = document.getElementById('todayAttendanceStatus');
+            const dateTimeElement = document.getElementById('todayDateTime');
+            
+            // Update date only
+            updateDateTime();
+            
+            // Get today's attendance value (assuming it's stored in currentStudent.todayAttendance)
+            const todayValue = currentStudent.todayAttendance;
+            
+            if (todayValue === 1) {
+                // Present
+                icon.textContent = '✓';
+                icon.className = 'today-attendance-icon status-present';
+                status.textContent = 'PRESENT';
+                status.className = 'today-attendance-status status-present';
+            } else if (todayValue === 0) {
+                // Absent
+                icon.textContent = '✗';
+                icon.className = 'today-attendance-icon status-absent';
+                status.textContent = 'ABSENT';
+                status.className = 'today-attendance-status status-absent';
+            } else {
+                // Not Recorded
+                icon.textContent = '−';
+                icon.className = 'today-attendance-icon status-not-recorded';
+                status.textContent = 'NOT RECORDED';
+                status.className = 'today-attendance-status status-not-recorded';
+            }
+        }
+
+        function updateDateTime() {
+            const dateTimeElement = document.getElementById('todayDateTime');
+            if (!dateTimeElement) return;
+            
+            const now = new Date();
+            
+            // Format date: Friday, 24 October 2025
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            const dayName = days[now.getDay()];
+            const day = now.getDate();
+            const monthName = months[now.getMonth()];
+            const year = now.getFullYear();
+            
+            const dateStr = `${dayName}, ${day} ${monthName} ${year}`;
+            
+            dateTimeElement.innerHTML = `📅 ${dateStr}`;
+        }
+
+        /* ==================== TEST SCORE BAR CHART ==================== */
+function createTestScoresChart(selectedExamType = "Quarterly") {
+  const chart = document.getElementById("testScoresChart");
+  const selector = document.getElementById("examTypeSelector");
+  chart.innerHTML = "";
+  selector.innerHTML = "";
+
+  // Define available exam types
+  const examTypes = [
+    { key: "Quarterly", label: "Quarterly/പാദം", prefix: "Q" },
+    { key: "HalfYearly", label: "Half Yearly/അർധം", prefix: "H" },
+    { key: "Final", label: "Final/വാർഷികം", prefix: "F" }
+  ];
+
+  // Create radio buttons only for exam types that exist
+  examTypes.forEach(exam => {
+    const hasMarks = Object.keys(currentStudent).some(k =>
+      k.toLowerCase().includes(exam.prefix.toLowerCase())
+    );
+
+    if (!hasMarks) return; // skip exam if no marks available
+
+    const id = `exam_${exam.key}`;
+    const label = document.createElement("label");
+    label.setAttribute("for", id);
+    label.style.margin = "0 10px";
+    label.style.cursor = "pointer";
+
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "examType";
+    input.id = id;
+    input.value = exam.key;
+    input.checked = exam.key === selectedExamType;
+    input.style.marginRight = "5px";
+
+    input.addEventListener("change", () => createTestScoresChart(exam.key));
+
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(exam.label));
+    selector.appendChild(label);
+  });
+
+  // Update exam summary
+  updateExamSummary(selectedExamType);
+
+  // Determine prefix based on selected type
+  let prefix = "";
+  if (selectedExamType === "Quarterly") prefix = "Q";
+  else if (selectedExamType === "HalfYearly") prefix = "H";
+  else if (selectedExamType === "Final") prefix = "F";
+
+  // Detect keys flexibly (handles underscores or lowercase)
+  function findKey(namePart) {
+    return Object.keys(currentStudent).find(k =>
+      k.toLowerCase().includes(namePart.toLowerCase())
+    );
+  }
+
+const subjects = [
+  { name: "قرأن", scoredKey: findKey(`${prefix}quranScored`), maxKey: findKey(`${prefix}quranMax`) },
+  { name: "حفظ", scoredKey: findKey(`${prefix}hifzScored`), maxKey: findKey(`${prefix}hifzMax`) },
+  { name: "فقه", scoredKey: findKey(`${prefix}fiqhScored`), maxKey: findKey(`${prefix}fiqhMax`) },
+  { name: "عقيدة", scoredKey: findKey(`${prefix}aqeedaScored`), maxKey: findKey(`${prefix}aqeedaMax`) },
+  { name: "تاريخ", scoredKey: findKey(`${prefix}thareeqScored`), maxKey: findKey(`${prefix}thareeqMax`) },
+  { name: "تجويد", scoredKey: findKey(`${prefix}thajveedScored`), maxKey: findKey(`${prefix}thajveedMax`) },
+  { name: "لسان", scoredKey: findKey(`${prefix}lisanScored`), maxKey: findKey(`${prefix}lisanMax`) },
+  { name: "أخلاق", scoredKey: findKey(`${prefix}aklaqScored`), maxKey: findKey(`${prefix}aklaqMax`) },
+  { name: "دروس", scoredKey: findKey(`${prefix}duroosScored`), maxKey: findKey(`${prefix}duroosMax`) },
+  { name: "تفسير", scoredKey: findKey(`${prefix}thafseerScored`), maxKey: findKey(`${prefix}thafseerMax`) },
+  { name: "كتابة", scoredKey: findKey(`${prefix}kithabaScored`), maxKey: findKey(`${prefix}kithabaMax`) },
+  { name: "قراءة", scoredKey: findKey(`${prefix}kirathScored`), maxKey: findKey(`${prefix}kirathMax`) },
+  { name: "تطبيق", scoredKey: findKey(`${prefix}practicalScored`), maxKey: findKey(`${prefix}practicalMax`) }
+];
+
+
+  subjects.forEach(s => {
+    const scored = s.scoredKey ? currentStudent[s.scoredKey] : null;
+    const max = s.maxKey ? currentStudent[s.maxKey] : null;
+
+    if (!scored || !max || max === 0) return;
+
+    const pct = (scored / max) * 100;
+    const h = Math.max(pct * 1.5, 20);
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.height = `${h}px`;
+    bar.style.backgroundColor = getScoreColor(pct);
+    bar.style.transition = "height 0.4s ease";
+
+    const val = document.createElement("div");
+    val.className = "bar-value";
+    val.textContent = `${scored}/${max}`;
+
+    const label = document.createElement("div");
+    label.className = "bar-label";
+    label.textContent = s.name;
+
+    bar.appendChild(val);
+    bar.appendChild(label);
+    chart.appendChild(bar);
+  });
+
+  if (chart.children.length === 0) {
+    chart.innerHTML = "<p style='text-align:center;color:gray;'>No marks available for this exam.</p>";
+  }
+}
+
+/* ==================== EXAM SUMMARY ==================== */
+function updateExamSummary(examType) {
+  const totalMarksEl = document.getElementById('examTotalMarks');
+  const classRankEl = document.getElementById('examClassRank');
+  const statusEl = document.getElementById('examStatus');
+
+  let totalMarks = '-';
+  let classRank = '-';
+  let status = 'Not published';
+
+  // Get the data based on exam type
+  if (examType === 'Quarterly') {
+    totalMarks = currentStudent.qtotal || '-';
+    classRank = currentStudent.qclassIndex ? `#${currentStudent.qclassIndex}` : '-';
+    status = currentStudent.qstatus || 'Not published';
+  } else if (examType === 'HalfYearly') {
+    totalMarks = currentStudent.htotal || '-';
+    classRank = currentStudent.hclassIndex ? `#${currentStudent.hclassIndex}` : '-';
+    status = currentStudent.hstatus || 'Not published';
+  } else if (examType === 'Final') {
+    totalMarks = currentStudent.ftotal || '-';
+    classRank = currentStudent.fclassIndex ? `#${currentStudent.fclassIndex}` : '-';
+    status = currentStudent.fstatus || 'Not published';
+  }
+
+  // Update the display
+  totalMarksEl.textContent = totalMarks;
+  classRankEl.textContent = classRank;
+  statusEl.textContent = status;
+
+  // Style status based on value
+  if (status.toLowerCase().includes('pass')) {
+    statusEl.style.color = '#27ae60';
+  } else if (status.toLowerCase().includes('fail')) {
+    statusEl.style.color = '#e74c3c';
+  } else if (status.toLowerCase().includes('published')) {
+    statusEl.style.color = '#3498db';
+  } else {
+    statusEl.style.color = '#95a5a6';
+  }
+}
+
+
+        /* ==================== RANKING CHART ==================== */
+ function loadRankingData(){if(!isGoogleScriptAvailable()){console.error('Google Apps Script not available');return;}
+            google.script.run.withSuccessHandler(createRankingChart).withFailureHandler(err=>console.error('Failed to load ranking data',err)).getAllStudentsForRanking(currentStudent.className);
+        }
+      function createRankingChart(students) {
+  allStudents = students;
+  const chart = document.getElementById('rankingChart');
+  chart.innerHTML = '';
+
+  if (!students.length) return;
+
+  const maxH = 120, minH = 20, total = students.length;
+
+  students.forEach(stu => {
+    const pos = stu.alloverGrandRank;
+    const h = maxH - ((pos - 1) / (total - 1)) * (maxH - minH);
+
+    const bar = document.createElement('div');
+    bar.className = 'rank-bar';
+    bar.style.height = `${h}px`;
+    bar.style.backgroundColor = stu.username === currentStudent.username ? '#ff6b6b' : '#4facfe';
+    bar.title = `${stu.name} - Position ${pos}`;
+
+    const badge = document.createElement('div');
+    badge.style.fontSize = '1.2rem';
+    badge.style.marginBottom = '5px';
+
+    if (pos === 1) {
+      badge.textContent = '🥇';
+      badge.title = '🏆 1st Place';
+    } else if (pos === 2) {
+      badge.textContent = '🥈';
+      badge.title = '🥈 2nd Place';
+    } else if (pos === 3) {
+      badge.textContent = '🥉';
+      badge.title = '🥉 3rd Place';
+    }
+
+    if (pos <= 3) bar.appendChild(badge);
+
+    const label = document.createElement('div');
+    label.className = 'rank-label';
+    label.textContent = `#${pos}`;
+    bar.appendChild(label);
+if (pos === 1) {
+  badge.textContent = '🥇';
+  badge.className = 'glow';
+}
+if (pos <= 3) {
+  bar.appendChild(badge);
+  
+  if (stu.username === currentStudent.username) {
+    celebrateWinners(pos); // 🎉 Trigger only for this student
+  }
+}
+
+    chart.appendChild(bar);
+  });
+}
+
+
+
+        /* ==================== HELPERS ==================== */
+        function getScoreColor(p){if(p>=80)return'#27ae60';if(p>=60)return'#f39c12';if(p>=40)return'#e67e22';return'#e74c3c';}
+        function formatDate(d){if(!d)return'Not provided';if(typeof d==='string')return d;if(d instanceof Date)return d.toLocaleDateString();return d.toString();}
+        function showError(msg){const div=document.getElementById('errorMessage');div.textContent=msg;setTimeout(()=>div.textContent='',5000);}
+        function showLoading(show){document.getElementById('loading').style.display=show?'block':'none';}
+        function logout(){document.getElementById('dashboard').style.display='none';document.getElementById('loginContainer').style.display='block';document.getElementById('loginForm').reset();document.getElementById('errorMessage').textContent='';currentStudent=null;allStudents=[];removeBirthdayEffects();}
+        function isGoogleScriptAvailable(){return typeof google!=='undefined'&&google.script&&google.script.run;}
+
+        /* ==================== INITIAL LOAD ==================== */
+        window.onload=function(){
+            if(!isGoogleScriptAvailable()){showError('This page must be accessed through Google Apps Script Web App URL. Please deploy the script first.');return;}
+            google.script.run.withSuccessHandler(classes=>{
+                const sel=document.getElementById('className');sel.innerHTML='<option value="">Select Class</option>';
+                classes.forEach(c=>{const opt=document.createElement('option');opt.value=c;opt.textContent=c.charAt(0).toUpperCase()+c.slice(1);sel.appendChild(opt);});
+            }).withFailureHandler(err=>console.error('Failed to load classes',err)).getClassList();
+        };
+
+        /* ==================== 🎉 BIRTHDAY CELEBRATION ==================== */
+        function celebrateBirthday(){
+            const today=new Date();const dob=new Date(currentStudent.dob);
+            if(dob.getDate()===today.getDate()&&dob.getMonth()===today.getMonth()){
+                const msg=document.createElement('div');msg.id='birthdayMessage';msg.textContent='🎉 Happy Birthday! 🎂';document.body.appendChild(msg);
+                const TOTAL=40;
+                for(let i=0;i<TOTAL;i++)addFlower();
+                setTimeout(()=>removeBirthdayEffects(),10000);
+            }
+        }
+        function addFlower(){
+            const flower=document.createElement('span');flower.className='flower';flower.textContent='🌸';
+            const size=Math.random()*20+20;flower.style.fontSize=`${size}px`;
+            flower.style.left=Math.random()*100+'vw';
+            const duration=Math.random()*3+4;flower.style.animation=`fall ${duration}s linear infinite`;
+            document.body.appendChild(flower);
+            setTimeout(()=>flower.remove(),duration*1000);
+        }
+        function removeBirthdayEffects(){
+            document.querySelectorAll('.flower').forEach(f=>f.remove());
+            const msg=document.getElementById('birthdayMessage');if(msg)msg.remove();
+        }
+        function renderFeeCalendar(student) {
+  const months = [
+    'SHAWWAL', 'ZUL QA\'DAH', 'ZUL HIJJAH', 'MUHARRAM',
+    'SAFAR', 'RABEEUL AWWAL', 'RABEEUL AAKHIR',
+    'JUMAADAL AWWAL', 'JUMAADAL AAKHIR', 'RAJAB',
+    'SHA\'BAAN', 'RAMADAN'
+  ];
+
+  const container = document.getElementById("feeStatusContainer");
+  container.innerHTML = '';
+
+  const calendarRow = document.createElement("div");
+  calendarRow.style.display = "flex";
+  calendarRow.style.flexWrap = "wrap";
+  calendarRow.style.gap = "10px";
+  calendarRow.style.alignItems = "center";
+  calendarRow.style.margin = "15px 0";
+  calendarRow.style.justifyContent = "center";
+
+  const icon = document.createElement("span");
+  icon.textContent = "📆";
+  icon.style.fontSize = "1.8rem";
+  icon.style.marginRight = "10px";
+  calendarRow.appendChild(icon);
+
+  months.forEach((month, index) => {
+    const isPaid = index < student.monthsPaid;
+
+    const monthBox = document.createElement("div");
+    monthBox.style.border = "1px solid #ccc";
+    monthBox.style.padding = "6px 10px";
+    monthBox.style.borderRadius = "8px";
+    monthBox.style.minWidth = "90px";
+    monthBox.style.textAlign = "center";
+    monthBox.style.backgroundColor = isPaid ? "#e0ffe0" : "#ffe0e0";
+    monthBox.style.boxShadow = "1px 1px 3px rgba(0,0,0,0.1)";
+
+    monthBox.innerHTML = `
+      <div style="font-weight: bold;">${month}</div>
+      <div style="font-size: 1.4rem;">${isPaid ? '✅' : '❌'}</div>
+    `;
+    calendarRow.appendChild(monthBox);
+  });
+
+  const summaryRow = document.createElement("div");
+  summaryRow.style.fontSize = "1.1rem";
+  summaryRow.style.marginTop = "10px";
+  summaryRow.style.background = "#f1f1f1";
+summaryRow.style.padding = "10px";
+summaryRow.style.borderRadius = "8px";
+summaryRow.style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)";
+
+  
+  summaryRow.innerHTML = `
+	    💳 <strong>മാസഫീ തുക:</strong> ₹${student.monthlyRate} &nbsp;&nbsp;|&nbsp;&nbsp;
+	    ✅ <strong>ആകെ അടച്ചത്:</strong> ₹${student.totalPaid} &nbsp;&nbsp;|&nbsp;&nbsp;
+	    ❗ <strong> അടക്കാനുള്ളത്:</strong> ₹${student.balance}&nbsp;&nbsp;|&nbsp;&nbsp;
+      ✅📝 <strong>പരീക്ഷഫീ:</strong> ₹${student.examfeepaid} &nbsp;&nbsp;|&nbsp;&nbsp;
+      ✅🗳️ <strong>മറ്റു സംഭവനകൾ :</strong> ₹${student.otherpayment} <br> <br>
+	    🔄<strong>മാസഫീ അടച്ച തിയ്യതി:</strong> ₹${student.lastpaymentdate}
+	  `;
+
+  container.appendChild(calendarRow);
+  container.appendChild(summaryRow);
+}
+
+function renderParentMeeting(student) {
+  const iconContainer = document.getElementById("parentMeetingIcons");
+  const summaryContainer = document.getElementById("parentMeetSummary");
+  const participantName = document.getElementById("participantName");
+  const usthadRemark = document.getElementById("usthadRemark");
+
+  iconContainer.innerHTML = '';
+  summaryContainer.innerHTML = '';
+  participantName.textContent = student.participant || 'No name available';
+  usthadRemark.textContent = student.remark || 'No coment';
+
+  const totalSessions = student.totalParentmeet || 0;
+  const participated = student.parentMeetparticipation || 0;
+  const notParticipated = student.parentMeetnonparticipation || 0;
+
+  summaryContainer.innerHTML = '📋 <strong>ആകെ മീറ്റിങ്:</strong> ' + totalSessions + ' &nbsp;&nbsp; ✅ <strong>പങ്കെടുത്തത്:</strong> ' + participated;
+
+  for (let i = 1; i <= totalSessions; i++) {
+    const icon = document.createElement('span');
+
+    if (i <= participated) {
+      icon.textContent = '👨‍👩‍👧‍👦✅';
+      icon.title = `Session ${i}: Attended`;
+    } else if (i <= participated + notParticipated) {
+      icon.textContent = '👨‍👩‍👧‍👦❌';
+      icon.title = `Session ${i}: Missed`;
+    } else {
+      continue;
+    }
+
+    iconContainer.appendChild(icon);
+  }
+}
+function celebrateWinners(rank) {
+  const container = document.getElementById('winnerCelebration');
+  const icons = rank === 1 ? ['🏆', '🥇', '🎉'] : rank === 2 ? ['🥈', '🎊'] : ['🥉', '🎉'];
+  const count = rank === 1 ? 30 : 20;
+
+  for (let i = 0; i < count; i++) {
+    const icon = document.createElement('div');
+    icon.textContent = icons[Math.floor(Math.random() * icons.length)];
+    icon.style.position = 'absolute';
+    icon.style.bottom = '0';
+    icon.style.left = `${Math.random() * 100}%`;
+    icon.style.fontSize = `${16 + Math.random() * 24}px`;
+    icon.style.animation = `floatUp ${3 + Math.random() * 2}s linear`;
+    icon.style.zIndex = '1000';
+    icon.style.pointerEvents = 'none';
+
+    container.appendChild(icon);
+
+    setTimeout(() => {
+      container.removeChild(icon);
+    }, 5000);
+  }
+}
+    </script>
+</body>
+</html>
